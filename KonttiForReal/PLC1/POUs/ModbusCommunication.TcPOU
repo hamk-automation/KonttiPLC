@@ -1,15 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.18">
   <POU Name="ModbusCommunication" Id="{bf59a4bc-9bbb-44a9-a9e0-c1d2c7fb1f0e}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM ModbusCommunication
 VAR
 	aP1, aP2				: ARRAY [GrundfosRegAddress.listStart..GrundfosRegAddress.listEnd] OF WORD;
+	aFeeder					: ARRAY [ATV212RegAddress.listStart..ATV212RegAddress.listEnd] OF WORD;
 	nStep					: INT := 0;
 END_VAR
 
 VAR CONSTANT
 	bP1Addr					: BYTE := 2;
 	bP2Addr					: BYTE := 4;
+	bFeederAddr				: BYTE := 5;
 	wStartPumpCmd			: WORD := 16#0000;
 	wStopPumpCmd			: WORD := 16#8000;
 END_VAR]]></Declaration>
@@ -24,6 +26,11 @@ CASE nStep OF
 	2:
 		GrundfosDataConversion(arrReg:= aP1, pstGrundfosMagna3:= ADR(GVL.stP1));
 		GrundfosDataConversion(arrReg:= aP2, pstGrundfosMagna3:= ADR(GVL.stP2));
+		nStep := 3;
+	3:	
+		FeederRead();
+	4:
+		ATV212DataConversion(arrReg:=aFeeder, pstATV212:= ADR(GVL.stFeeder));
 		nStep := 0;
 END_CASE;
 ]]></ST>
@@ -80,6 +87,61 @@ END_VAR
 		nRegisterAddress :=  GrundfosRegAddress.listStart;
 	END_IF
 END_IF;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ATV212DataConversion" Id="{f7c5cd8b-45b5-444d-bc30-c649d80180e3}">
+      <Declaration><![CDATA[METHOD ATV212DataConversion : BOOL
+VAR_INPUT
+	arrReg	: ARRAY [ATV212RegAddress.listStart..ATV212RegAddress.listEnd] OF WORD;
+	pstATV212	: POINTER TO ATV212;
+END_VAR
+
+VAR
+	iMemIndex: ATV212RegAddress;
+	iRegIndex: ATV212RegAddress;
+	a_MbRegValue	: ARRAY [300..350] OF REAL;
+	dwMergedReg		: DWORD;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[WHILE (iMemIndex <  ATV212RegAddress.listEnd AND iRegIndex < 879) DO
+	IF (iRegIndex <> 875)
+		AND (iRegIndex <> 876) 
+		AND (iRegIndex <> 877)
+		AND (iRegIndex <> 878) THEN
+		a_MbRegValue[iRegIndex] := (arrReg[iMemIndex])*Scale.fATV212Scale[iRegIndex];
+		iMemIndex := iMemIndex + 1;
+		iRegIndex := iRegIndex + 1;
+	ELSE
+		dwMergedReg := SHL(WORD_TO_DWORD(arrReg[iMemIndex]),16) OR WORD_TO_DWORD(arrReg[iMemIndex+1]);
+		a_MbRegValue[iRegIndex] := (dwMergedReg)*Scale.fATV212Scale[iRegIndex];
+		iMemIndex := iMemIndex + 2;
+		iRegIndex := iRegIndex + 1;
+	END_IF
+END_WHILE
+MEMCPY(pstATV212, ADR(a_MbRegValue), SIZEOF(ATV212));]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FeederRead" Id="{0e093eec-6a04-471a-b96f-3c921f9b1d43}">
+      <Declaration><![CDATA[METHOD FeederRead : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (NOT HWVar.ModbusMaster.BUSY) THEN
+	HWVar.ModbusMaster.ReadRegs(
+		UnitID := bFeederAddr,
+		Quantity := 4,
+		MBAddr := 875,
+		cbLength := SIZEOF(aFeeder),
+		pMemoryAddr := ADR(aFeeder),
+		Execute := TRUE,
+		Timeout := T#5S,
+		BUSY => ,
+		Error =>
+		);
+		nStep := 4;
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="GrundfosDataConversion" Id="{e207b614-c65b-464e-b6c3-2ac0f5daff8e}">
@@ -182,7 +244,10 @@ END_IF;]]></ST>
       <LineId Id="38" Count="0" />
       <LineId Id="33" Count="0" />
       <LineId Id="61" Count="1" />
-      <LineId Id="50" Count="0" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="82" Count="2" />
       <LineId Id="31" Count="0" />
       <LineId Id="15" Count="0" />
     </LineIds>
@@ -196,6 +261,16 @@ END_IF;]]></ST>
       <LineId Id="7" Count="11" />
       <LineId Id="23" Count="0" />
       <LineId Id="19" Count="3" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="ModbusCommunication.ATV212DataConversion">
+      <LineId Id="6" Count="1" />
+      <LineId Id="9" Count="2" />
+      <LineId Id="18" Count="9" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="ModbusCommunication.FeederRead">
+      <LineId Id="6" Count="12" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="ModbusCommunication.GrundfosDataConversion">
