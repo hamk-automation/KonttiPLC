@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.18">
+  <DUT Name="ATV212RegAddress" Id="{f1f8a854-b42c-44a7-bdca-c98db6d8dbc3}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE ATV212RegAddress :
+(
+	listStart		:= 875,
+	MotorSpeed		:= 875,
+	OutputFrequency	:= 876,
+	OutputCurrent	:= 877,
+	OutputVoltage	:= 878,
+	listEnd 		:= 879
+) WORD := listStart;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

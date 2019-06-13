@@ -15,6 +15,12 @@
     <LibraryReferences>{46b02969-6e5b-421a-b1af-6dfa64eec22d}</LibraryReferences>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DUTs\ATV212.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\ATV212RegAddress.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\GrundfosMagna3.TcDUT">
       <SubType>Code</SubType>
     </Compile>
